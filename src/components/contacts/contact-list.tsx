@@ -1,18 +1,19 @@
 "use client";
 import { useState } from "react";
+import { useStore } from "@/lib/store";
+import type { Contact } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ContactDialog } from "./contact-dialog";
-import { deleteContact } from "@/app/actions/contacts";
 import { Plus, Phone, Mail, Building2, Pencil, Trash2 } from "lucide-react";
-import type { InferSelectModel } from "drizzle-orm";
-import type { contacts } from "@/db/schema";
 
-type Contact = InferSelectModel<typeof contacts>;
-
-export function ContactList({ contacts }: { contacts: Contact[] }) {
+export function ContactList() {
+  const contacts = useStore((s) => s.contacts);
+  const deleteContact = useStore((s) => s.deleteContact);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
+
+  const sorted = [...contacts].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="p-8">
@@ -26,7 +27,7 @@ export function ContactList({ contacts }: { contacts: Contact[] }) {
         </Button>
       </div>
 
-      {contacts.length === 0 ? (
+      {sorted.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <p className="text-muted-foreground mb-4">Noch keine Kontakte angelegt.</p>
           <Button onClick={() => { setEditing(null); setOpen(true); }}>
@@ -35,7 +36,7 @@ export function ContactList({ contacts }: { contacts: Contact[] }) {
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {contacts.map((c) => (
+          {sorted.map((c) => (
             <Card key={c.id} className="group hover:shadow-md transition-shadow">
               <CardContent className="p-5">
                 <div className="flex items-start gap-3 mb-3">
@@ -47,7 +48,6 @@ export function ContactList({ contacts }: { contacts: Contact[] }) {
                     {c.role && <p className="text-xs text-muted-foreground">{c.role}</p>}
                   </div>
                 </div>
-
                 {c.company && (
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
                     <Building2 className="h-3.5 w-3.5 flex-shrink-0" />
@@ -57,43 +57,23 @@ export function ContactList({ contacts }: { contacts: Contact[] }) {
                 {c.phone && (
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
                     <Phone className="h-3.5 w-3.5 flex-shrink-0" />
-                    <a href={`tel:${c.phone}`} className="hover:text-foreground transition-colors truncate">
-                      {c.phone}
-                    </a>
+                    <a href={`tel:${c.phone}`} className="hover:text-foreground transition-colors truncate">{c.phone}</a>
                   </div>
                 )}
                 {c.email && (
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
                     <Mail className="h-3.5 w-3.5 flex-shrink-0" />
-                    <a href={`mailto:${c.email}`} className="hover:text-foreground transition-colors truncate">
-                      {c.email}
-                    </a>
+                    <a href={`mailto:${c.email}`} className="hover:text-foreground transition-colors truncate">{c.email}</a>
                   </div>
                 )}
-
-                {c.notes && (
-                  <p className="text-xs text-muted-foreground border-t pt-2 mt-2 line-clamp-2">{c.notes}</p>
-                )}
-
+                {c.notes && <p className="text-xs text-muted-foreground border-t pt-2 mt-2 line-clamp-2">{c.notes}</p>}
                 <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => { setEditing(c); setOpen(true); }}
-                  >
+                  <Button variant="ghost" size="icon" className="h-7 w-7"
+                    onClick={() => { setEditing(c); setOpen(true); }}>
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive hover:text-destructive"
-                    onClick={async () => {
-                      if (confirm(`Kontakt "${c.name}" wirklich löschen?`)) {
-                        await deleteContact(c.id);
-                      }
-                    }}
-                  >
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                    onClick={() => { if (confirm(`Kontakt "${c.name}" wirklich löschen?`)) deleteContact(c.id); }}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>

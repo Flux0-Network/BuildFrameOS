@@ -1,16 +1,13 @@
 "use client";
 import { useState } from "react";
+import { useStore } from "@/lib/store";
+import type { Project } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProjectDialog } from "./project-dialog";
-import { deleteProject } from "@/app/actions/projects";
 import { Plus, MapPin, User, Pencil, Trash2, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import type { InferSelectModel } from "drizzle-orm";
-import type { projects } from "@/db/schema";
-
-type Project = InferSelectModel<typeof projects>;
 
 const statusVariant: Record<string, "success" | "warning" | "secondary"> = {
   aktiv: "success",
@@ -18,7 +15,9 @@ const statusVariant: Record<string, "success" | "warning" | "secondary"> = {
   abgeschlossen: "secondary",
 };
 
-export function ProjectList({ projects }: { projects: Project[] }) {
+export function ProjectList() {
+  const projects = useStore((s) => s.projects);
+  const deleteProject = useStore((s) => s.deleteProject);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Project | null>(null);
 
@@ -52,9 +51,7 @@ export function ProjectList({ projects }: { projects: Project[] }) {
                       {p.name}
                     </h3>
                   </Link>
-                  <Badge variant={statusVariant[p.status] ?? "secondary"}>
-                    {p.status}
-                  </Badge>
+                  <Badge variant={statusVariant[p.status] ?? "secondary"}>{p.status}</Badge>
                 </div>
 
                 {p.address && (
@@ -69,7 +66,6 @@ export function ProjectList({ projects }: { projects: Project[] }) {
                     <span className="truncate">{p.client}</span>
                   </div>
                 )}
-
                 {p.startDate && (
                   <p className="text-xs text-muted-foreground mb-3">
                     {p.startDate}{p.endDate ? ` – ${p.endDate}` : ""}
@@ -78,31 +74,17 @@ export function ProjectList({ projects }: { projects: Project[] }) {
 
                 <div className="flex items-center justify-between pt-3 border-t">
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => { setEditing(p); setOpen(true); }}
-                    >
+                    <Button variant="ghost" size="icon" className="h-7 w-7"
+                      onClick={() => { setEditing(p); setOpen(true); }}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={async () => {
-                        if (confirm(`Projekt "${p.name}" wirklich löschen?`)) {
-                          await deleteProject(p.id);
-                        }
-                      }}
-                    >
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={() => { if (confirm(`Projekt "${p.name}" wirklich löschen?`)) deleteProject(p.id); }}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                  <Link
-                    href={`/projekte/${p.id}`}
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <Link href={`/projekte/${p.id}`}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
                     Details <ChevronRight className="h-3 w-3" />
                   </Link>
                 </div>
@@ -112,11 +94,7 @@ export function ProjectList({ projects }: { projects: Project[] }) {
         </div>
       )}
 
-      <ProjectDialog
-        open={open}
-        onOpenChange={setOpen}
-        project={editing}
-      />
+      <ProjectDialog open={open} onOpenChange={setOpen} project={editing} />
     </div>
   );
 }

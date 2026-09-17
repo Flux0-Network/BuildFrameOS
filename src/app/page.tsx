@@ -1,12 +1,13 @@
-import { getProjects } from "./actions/projects";
-import { getContacts } from "./actions/contacts";
+"use client";
+import { useStore } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Users, BookOpen, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
-export default async function DashboardPage() {
-  const [projects, contacts] = await Promise.all([getProjects(), getContacts()]);
+export default function DashboardPage() {
+  const projects = useStore((s) => s.projects);
+  const contacts = useStore((s) => s.contacts);
 
   const aktiv = projects.filter((p) => p.status === "aktiv").length;
   const abgeschlossen = projects.filter((p) => p.status === "abgeschlossen").length;
@@ -18,7 +19,6 @@ export default async function DashboardPage() {
         <p className="text-muted-foreground mt-1">Übersicht deiner Bauprojekte</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -58,14 +58,13 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* Recent projects */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Aktive Projekte</CardTitle>
           </CardHeader>
           <CardContent>
-            {projects.filter((p) => p.status === "aktiv").length === 0 ? (
+            {aktiv === 0 ? (
               <p className="text-sm text-muted-foreground">Keine aktiven Projekte.</p>
             ) : (
               <ul className="space-y-2">
@@ -80,9 +79,7 @@ export default async function DashboardPage() {
                       >
                         <div>
                           <p className="text-sm font-medium">{p.name}</p>
-                          {p.address && (
-                            <p className="text-xs text-muted-foreground">{p.address}</p>
-                          )}
+                          {p.address && <p className="text-xs text-muted-foreground">{p.address}</p>}
                         </div>
                         <Badge variant="success">aktiv</Badge>
                       </Link>
@@ -103,18 +100,13 @@ export default async function DashboardPage() {
             ) : (
               <ul className="space-y-2">
                 {contacts.slice(0, 5).map((c) => (
-                  <li
-                    key={c.id}
-                    className="flex items-center gap-3 rounded-md p-2 hover:bg-accent transition-colors"
-                  >
+                  <li key={c.id} className="flex items-center gap-3 rounded-md p-2 hover:bg-accent transition-colors">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">
                       {c.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <p className="text-sm font-medium">{c.name}</p>
-                      {c.company && (
-                        <p className="text-xs text-muted-foreground">{c.company}</p>
-                      )}
+                      {c.company && <p className="text-xs text-muted-foreground">{c.company}</p>}
                     </div>
                   </li>
                 ))}
