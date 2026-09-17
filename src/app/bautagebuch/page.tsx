@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { db, ensureDb } from "@/db";
 import { diaryEntries, projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Cloud, Thermometer, Users } from "lucide-react";
 
 export default async function BautagebuchPage() {
+  await ensureDb();
   const entries = await db
     .select({
       id: diaryEntries.id,
