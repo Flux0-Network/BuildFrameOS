@@ -24,6 +24,15 @@ export type Contact = {
   createdAt: string;
 };
 
+export type DiaryAttendee = {
+  id: string;
+  firmName: string;
+  contactId?: string;
+  personCount: number;
+  activity: string;
+  notes?: string;
+};
+
 export type DiaryEntry = {
   id: string;
   projectId: string;
@@ -33,6 +42,8 @@ export type DiaryEntry = {
   workers?: number;
   activities?: string;
   notes?: string;
+  chefNotes?: string;
+  attendees?: DiaryAttendee[];
   createdAt: string;
 };
 
@@ -40,6 +51,8 @@ type Store = {
   projects: Project[];
   contacts: Contact[];
   diary: DiaryEntry[];
+  chefName: string;
+  chefEmail: string;
 
   addProject: (data: Omit<Project, "id" | "createdAt">) => void;
   updateProject: (id: string, data: Partial<Project>) => void;
@@ -52,6 +65,8 @@ type Store = {
   addDiaryEntry: (data: Omit<DiaryEntry, "id" | "createdAt">) => void;
   updateDiaryEntry: (id: string, data: Partial<DiaryEntry>) => void;
   deleteDiaryEntry: (id: string) => void;
+
+  setChefInfo: (info: { name?: string; email?: string }) => void;
 };
 
 export const useStore = create<Store>()(
@@ -60,6 +75,8 @@ export const useStore = create<Store>()(
       projects: [],
       contacts: [],
       diary: [],
+      chefName: "",
+      chefEmail: "",
 
       addProject: (data) =>
         set((s) => ({
@@ -105,6 +122,12 @@ export const useStore = create<Store>()(
         })),
       deleteDiaryEntry: (id) =>
         set((s) => ({ diary: s.diary.filter((e) => e.id !== id) })),
+
+      setChefInfo: (info) =>
+        set((s) => ({
+          chefName: info.name !== undefined ? info.name : s.chefName,
+          chefEmail: info.email !== undefined ? info.email : s.chefEmail,
+        })),
     }),
     { name: "buildframeos-data" }
   )

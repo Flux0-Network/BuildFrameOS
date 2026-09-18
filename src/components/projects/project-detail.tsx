@@ -8,8 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DiaryDialog } from "@/components/diary/diary-dialog";
-import { ChevronLeft, Plus, MapPin, User, Calendar, Pencil, Trash2, Cloud, Thermometer, Users } from "lucide-react";
+import {
+  ChevronLeft, Plus, MapPin, User, Calendar, Pencil, Trash2,
+  Cloud, Thermometer, Users, FileDown, Send
+} from "lucide-react";
 import { ProjectDialog } from "./project-dialog";
+import { generateBauberichtPDF, sharePDF } from "@/lib/pdf";
 
 const statusVariant: Record<string, "success" | "warning" | "secondary"> = {
   aktiv: "success",
@@ -20,14 +24,30 @@ const statusVariant: Record<string, "success" | "warning" | "secondary"> = {
 export function ProjectDetail({ projectId }: { projectId: string }) {
   const project = useStore((s) => s.projects.find((p) => p.id === projectId));
   const entries = useStore((s) => s.diary.filter((d) => d.projectId === projectId));
+  const contacts = useStore((s) => s.contacts);
+  const chefName = useStore((s) => s.chefName);
+  const chefEmail = useStore((s) => s.chefEmail);
   const deleteDiaryEntry = useStore((s) => s.deleteDiaryEntry);
   const [projectOpen, setProjectOpen] = useState(false);
   const [diaryOpen, setDiaryOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
+  const [loadingPdf, setLoadingPdf] = useState<string | null>(null);
 
   if (!project) notFound();
 
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+
+  const handlePdf = async (entry: DiaryEntry, forward = false) => {
+    setLoadingPdf(entry.id + (forward ? "-fwd" : ""));
+    try {
+      const blob = await generateBauberichtPDF(entry, project, contacts, chefName);
+      const date = new Date(entry.date).toLocaleDateString("de-DE").replace(/\./g, "-");
+      const filename = `Baubericht_${project.name.replace(/\s+/g, "_")}_${date}.pdf`;
+      await sharePDF(blob, filename, forward ? chefEmail : undefined);
+    } finally {
+      setLoadingPdf(null);
+    }
+  };
 
   return (
     <div className="p-4 lg:p-8 max-w-4xl">
@@ -102,6 +122,18 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                       })}
                     </CardTitle>
                     <div className="flex gap-1 flex-shrink-0">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" title="PDF herunterladen"
+                        disabled={loadingPdf === entry.id}
+                        onClick={() => handlePdf(entry, false)}>
+                        <FileDown className="h-3.5 w-3.5" />
+                      </Button>
+                      {chefEmail && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600 hover:text-amber-700" title="An Chef senden"
+                          disabled={loadingPdf === entry.id + "-fwd"}
+                          onClick={() => handlePdf(entry, true)}>
+                          <Send className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-7 w-7"
                         onClick={() => { setEditingEntry(entry); setDiaryOpen(true); }}>
                         <Pencil className="h-3.5 w-3.5" />
@@ -113,20 +145,55 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="px-4 pb-4 pt-1">
-                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mb-2">
-                    {entry.weather && (
-                      <span className="flex items-center gap-1"><Cloud className="h-3.5 w-3.5" /> {entry.weather}</span>
-                    )}
-                    {entry.temperature != null && (
-                      <span className="flex items-center gap-1"><Thermometer className="h-3.5 w-3.5" /> {entry.temperature}°C</span>
-                    )}
-                    {entry.workers != null && (
-                      <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {entry.workers} Arbeiter</span>
-                    )}
-                  </div>
+                <CardContent className="px-4 pb-4 pt-1 space-y-3">
+                  {/* Weather row */}
+                  {(entry.weather || entry.temperature != null || entry.workers != null) && (
+                    <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                      {entry.weather && (
+                        <span className="flex items-center gap-1"><Cloud className="h-3.5 w-3.5" /> {entry.weather}</span>
+                      )}
+                      {entry.temperature != null && (
+                        <span className="flex items-center gap-1"><Thermometer className="h-3.5 w-3.5" /> {entry.temperature}°C</span>
+                      )}
+                      {entry.workers != null && (
+                        <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {entry.workers} Arbeiter</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Attendees table */}
+                  {entry.attendees && entry.attendees.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+                        <Users className="h-3 w-3" /> Anwesende
+                      </p>
+                      <div className="rounded-md border overflow-hidden">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="bg-muted/50 border-b">
+                              <th className="text-left px-2.5 py-1.5 font-medium text-muted-foreground">Firma / Person</th>
+                              <th className="text-center px-2.5 py-1.5 font-medium text-muted-foreground w-16">Pers.</th>
+                              <th className="text-left px-2.5 py-1.5 font-medium text-muted-foreground">Tätigkeit</th>
+                              <th className="text-left px-2.5 py-1.5 font-medium text-muted-foreground hidden sm:table-cell">Notiz</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {entry.attendees.map((a) => (
+                              <tr key={a.id} className="border-b last:border-0">
+                                <td className="px-2.5 py-1.5 font-medium">{a.firmName}</td>
+                                <td className="px-2.5 py-1.5 text-center text-muted-foreground">{a.personCount}</td>
+                                <td className="px-2.5 py-1.5 text-muted-foreground">{a.activity}</td>
+                                <td className="px-2.5 py-1.5 text-muted-foreground hidden sm:table-cell">{a.notes ?? ""}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
                   {entry.activities && (
-                    <div className="mb-2">
+                    <div>
                       <p className="text-xs font-medium text-muted-foreground mb-0.5">Tätigkeiten</p>
                       <p className="text-sm whitespace-pre-wrap">{entry.activities}</p>
                     </div>
@@ -135,6 +202,12 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                     <div>
                       <p className="text-xs font-medium text-muted-foreground mb-0.5">Notizen</p>
                       <p className="text-sm whitespace-pre-wrap">{entry.notes}</p>
+                    </div>
+                  )}
+                  {entry.chefNotes && (
+                    <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2">
+                      <p className="text-xs font-medium text-amber-800 mb-0.5">Chef-Hinweis</p>
+                      <p className="text-sm text-amber-900 whitespace-pre-wrap">{entry.chefNotes}</p>
                     </div>
                   )}
                 </CardContent>

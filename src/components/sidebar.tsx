@@ -2,8 +2,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, BookOpen, Users, LayoutDashboard, HardHat, Menu, X } from "lucide-react";
+import { Building2, BookOpen, Users, LayoutDashboard, HardHat, Menu, X, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SettingsDialog } from "./settings-dialog";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -12,7 +13,7 @@ const navItems = [
   { href: "/kontakte", label: "Kontakte", icon: Users },
 ];
 
-function NavLinks({ onClose }: { onClose?: () => void }) {
+function NavLinks({ onClose, onSettings }: { onClose?: () => void; onSettings: () => void }) {
   const pathname = usePathname();
   return (
     <nav className="flex-1 px-3 py-4 space-y-1">
@@ -41,6 +42,7 @@ function NavLinks({ onClose }: { onClose?: () => void }) {
 
 export function Sidebar() {
   const [open, setOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <>
@@ -50,13 +52,22 @@ export function Sidebar() {
           <HardHat className="h-5 w-5 text-primary" />
           <span className="font-bold text-base tracking-tight">BuildFrameOS</span>
         </div>
-        <button
-          onClick={() => setOpen(true)}
-          className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-          aria-label="Menü öffnen"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            aria-label="Einstellungen"
+          >
+            <Settings className="h-4.5 w-4.5" />
+          </button>
+          <button
+            onClick={() => setOpen(true)}
+            className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            aria-label="Menü öffnen"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
       </header>
 
       {/* Mobile drawer backdrop */}
@@ -87,7 +98,16 @@ export function Sidebar() {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <NavLinks onClose={() => setOpen(false)} />
+        <NavLinks onClose={() => setOpen(false)} onSettings={() => { setOpen(false); setSettingsOpen(true); }} />
+        <div className="px-3 pb-4">
+          <button
+            onClick={() => { setOpen(false); setSettingsOpen(true); }}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            <Settings className="h-4 w-4 flex-shrink-0" />
+            Einstellungen
+          </button>
+        </div>
         <div className="px-5 py-4 border-t text-xs text-muted-foreground">v0.1.0</div>
       </aside>
 
@@ -97,9 +117,20 @@ export function Sidebar() {
           <HardHat className="h-6 w-6 text-primary" />
           <span className="font-bold text-lg tracking-tight">BuildFrameOS</span>
         </div>
-        <NavLinks />
+        <NavLinks onSettings={() => setSettingsOpen(true)} />
+        <div className="px-3 pb-4">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            <Settings className="h-4 w-4 flex-shrink-0" />
+            Einstellungen
+          </button>
+        </div>
         <div className="px-6 py-4 border-t text-xs text-muted-foreground">v0.1.0</div>
       </aside>
+
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
   );
 }
