@@ -25,55 +25,66 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const [diaryOpen, setDiaryOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
 
-  if (!project) {
-    notFound();
-  }
+  if (!project) notFound();
 
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <div className="p-8 max-w-4xl">
-      <div className="mb-6">
-        <Link href="/projekte" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
+    <div className="p-4 lg:p-8 max-w-4xl">
+      <div className="mb-5">
+        <Link href="/projekte" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3">
           <ChevronLeft className="h-4 w-4" /> Alle Projekte
         </Link>
 
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-3xl font-bold">{project.name}</h1>
-              <Badge variant={statusVariant[project.status] ?? "secondary"}>{project.status}</Badge>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <h1 className="text-xl lg:text-3xl font-bold truncate">{project.name}</h1>
+              <Badge variant={statusVariant[project.status] ?? "secondary"} className="flex-shrink-0">
+                {project.status}
+              </Badge>
             </div>
-            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mt-2">
-              {project.address && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {project.address}</span>}
-              {project.client && <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" /> {project.client}</span>}
+            <div className="flex flex-wrap gap-3 text-xs lg:text-sm text-muted-foreground">
+              {project.address && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5 flex-shrink-0" /> {project.address}
+                </span>
+              )}
+              {project.client && (
+                <span className="flex items-center gap-1">
+                  <User className="h-3.5 w-3.5 flex-shrink-0" /> {project.client}
+                </span>
+              )}
               {project.startDate && (
                 <span className="flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
+                  <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
                   {project.startDate}{project.endDate ? ` – ${project.endDate}` : ""}
                 </span>
               )}
             </div>
-            {project.description && <p className="mt-3 text-sm text-muted-foreground max-w-2xl">{project.description}</p>}
+            {project.description && (
+              <p className="mt-2 text-sm text-muted-foreground">{project.description}</p>
+            )}
           </div>
-          <Button variant="outline" size="sm" onClick={() => setProjectOpen(true)}>
-            <Pencil className="h-3.5 w-3.5" /> Bearbeiten
+          <Button variant="outline" size="sm" className="flex-shrink-0" onClick={() => setProjectOpen(true)}>
+            <Pencil className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline ml-1">Bearbeiten</span>
           </Button>
         </div>
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Bautagebuch</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg lg:text-xl font-semibold">Bautagebuch</h2>
           <Button size="sm" onClick={() => { setEditingEntry(null); setDiaryOpen(true); }}>
-            <Plus className="h-4 w-4" /> Eintrag
+            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Eintrag</span>
           </Button>
         </div>
 
         {sorted.length === 0 ? (
           <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-3">Noch keine Einträge im Bautagebuch.</p>
+            <CardContent className="py-10 text-center">
+              <p className="text-muted-foreground text-sm mb-3">Noch keine Einträge im Bautagebuch.</p>
               <Button size="sm" onClick={() => { setEditingEntry(null); setDiaryOpen(true); }}>
                 <Plus className="h-4 w-4" /> Ersten Eintrag erstellen
               </Button>
@@ -83,14 +94,14 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           <div className="space-y-3">
             {sorted.map((entry) => (
               <Card key={entry.id} className="group">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">
+                <CardHeader className="p-4 pb-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-sm lg:text-base leading-snug">
                       {new Date(entry.date).toLocaleDateString("de-DE", {
                         weekday: "long", year: "numeric", month: "long", day: "numeric",
                       })}
                     </CardTitle>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1 flex-shrink-0">
                       <Button variant="ghost" size="icon" className="h-7 w-7"
                         onClick={() => { setEditingEntry(entry); setDiaryOpen(true); }}>
                         <Pencil className="h-3.5 w-3.5" />
@@ -102,21 +113,27 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
-                    {entry.weather && <span className="flex items-center gap-1"><Cloud className="h-3.5 w-3.5" /> {entry.weather}</span>}
-                    {entry.temperature != null && <span className="flex items-center gap-1"><Thermometer className="h-3.5 w-3.5" /> {entry.temperature}°C</span>}
-                    {entry.workers != null && <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {entry.workers} Arbeiter</span>}
+                <CardContent className="px-4 pb-4 pt-1">
+                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mb-2">
+                    {entry.weather && (
+                      <span className="flex items-center gap-1"><Cloud className="h-3.5 w-3.5" /> {entry.weather}</span>
+                    )}
+                    {entry.temperature != null && (
+                      <span className="flex items-center gap-1"><Thermometer className="h-3.5 w-3.5" /> {entry.temperature}°C</span>
+                    )}
+                    {entry.workers != null && (
+                      <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {entry.workers} Arbeiter</span>
+                    )}
                   </div>
                   {entry.activities && (
                     <div className="mb-2">
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Tätigkeiten</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-0.5">Tätigkeiten</p>
                       <p className="text-sm whitespace-pre-wrap">{entry.activities}</p>
                     </div>
                   )}
                   {entry.notes && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Notizen</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-0.5">Notizen</p>
                       <p className="text-sm whitespace-pre-wrap">{entry.notes}</p>
                     </div>
                   )}
