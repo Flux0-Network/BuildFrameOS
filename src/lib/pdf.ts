@@ -24,6 +24,30 @@ function formatDate(dateStr: string) {
   });
 }
 
+// Palette
+const C = {
+  dark:      [30, 41, 59]   as [number,number,number],  // slate-800
+  amber:     [245, 158, 11] as [number,number,number],  // amber-500
+  amberLight:[255, 251, 235] as [number,number,number], // amber-50
+  amberMid:  [253, 230, 138] as [number,number,number], // amber-200
+  white:     [255, 255, 255] as [number,number,number],
+  bg:        [248, 250, 252] as [number,number,number], // slate-50
+  rowAlt:    [241, 245, 249] as [number,number,number], // slate-100
+  border:    [226, 232, 240] as [number,number,number], // slate-200
+  text:      [15, 23, 42]   as [number,number,number],  // slate-900
+  muted:     [100, 116, 139] as [number,number,number], // slate-500
+};
+
+function sectionLabel(doc: any, x: number, y: number, label: string) {
+  // Amber accent bar
+  doc.setFillColor(...C.amber);
+  doc.rect(x, y - 3.5, 3, 5, "F");
+  doc.setFontSize(9.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...C.text);
+  doc.text(label.toUpperCase(), x + 5, y);
+}
+
 export async function generateBauberichtPDF(
   entry: DiaryEntry,
   project: Project,
@@ -38,203 +62,231 @@ export async function generateBauberichtPDF(
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
-  const margin = 15;
-  let y = 15;
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 16;
+  const contentW = pageW - margin * 2;
 
-  // Header bar
-  doc.setFillColor(30, 30, 30);
-  doc.rect(0, 0, pageW, 12, "F");
-  doc.setFontSize(8);
-  doc.setTextColor(180, 180, 180);
-  doc.text("Erstellt mit BuildFrameOS", pageW / 2, 7.5, { align: "center" });
+  // ── Header background ──────────────────────────────────────
+  const headerH = 46;
+  doc.setFillColor(...C.dark);
+  doc.rect(0, 0, pageW, headerH, "F");
 
-  y = 22;
+  // Amber top accent stripe
+  doc.setFillColor(...C.amber);
+  doc.rect(0, 0, pageW, 3, "F");
 
-  // Logo + App name side by side
-  const logoSize = 14;
+  // Logo
+  const logoSize = 16;
+  const logoY = 10;
   if (logoBase64) {
-    doc.addImage(logoBase64, "PNG", margin, y - 10, logoSize, logoSize);
-    doc.setFontSize(18);
-    doc.setTextColor(20, 20, 20);
-    doc.setFont("helvetica", "bold");
-    doc.text("BuildFrameOS", margin + logoSize + 3, y - 2);
-  } else {
-    doc.setFontSize(18);
-    doc.setTextColor(20, 20, 20);
-    doc.setFont("helvetica", "bold");
-    doc.text("BuildFrameOS", margin, y);
+    doc.addImage(logoBase64, "PNG", margin, logoY, logoSize, logoSize);
   }
-  y += 8;
 
-  // Project name
+  // App name
+  const textX = logoBase64 ? margin + logoSize + 4 : margin;
+  doc.setFontSize(15);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...C.white);
+  doc.text("BuildFrameOS", textX, logoY + 7);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...C.amber);
+  doc.text("Bautagebuch", textX, logoY + 13);
+
+  // "BAUBERICHT" badge on right
+  const badgeW = 30;
+  const badgeX = pageW - margin - badgeW;
+  doc.setFillColor(...C.amber);
+  doc.roundedRect(badgeX, logoY + 1, badgeW, 8, 1.5, 1.5, "F");
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...C.dark);
+  doc.text("BAUBERICHT", badgeX + badgeW / 2, logoY + 6.2, { align: "center" });
+
+  // Project name below
   doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
-  doc.text(project.name, margin, y);
-  y += 6;
+  doc.setTextColor(...C.white);
+  doc.text(project.name, margin, 36);
 
-  // Report title
-  doc.setFontSize(11);
+  doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(80, 80, 80);
-  doc.text(`Baubericht · ${formatDate(entry.date)}`, margin, y);
-  y += 8;
+  doc.setTextColor(148, 163, 184); // slate-400
+  doc.text(formatDate(entry.date), margin, 42);
 
-  // Divider
-  doc.setDrawColor(220, 220, 220);
-  doc.line(margin, y, pageW - margin, y);
-  y += 6;
+  // ── Meta info strip ────────────────────────────────────────
+  doc.setFillColor(...C.rowAlt);
+  doc.rect(0, headerH, pageW, 13, "F");
 
-  // Project info table
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(20, 20, 20);
-  doc.text("Projektdaten", margin, y);
-  y += 3;
-
-  const infoRows: string[][] = [
-    ["Projekt", project.name],
-    ["Adresse", project.address ?? "—"],
-    ["Auftraggeber", project.client ?? "—"],
-    ["Status", project.status],
-    ["Datum", formatDate(entry.date)],
-    ["Ersteller", chefName || "—"],
+  const metaItems = [
+    { label: "Auftraggeber", value: project.client ?? "—" },
+    { label: "Adresse",      value: project.address ?? "—" },
+    { label: "Ersteller",    value: chefName || "—" },
   ];
 
-  autoTable(doc, {
-    startY: y,
-    margin: { left: margin, right: margin },
-    body: infoRows,
-    theme: "grid",
-    styles: { fontSize: 9, cellPadding: 2.5 },
-    columnStyles: {
-      0: { fontStyle: "bold", cellWidth: 38, fillColor: [245, 245, 245] },
-      1: { cellWidth: "auto" },
-    },
-    tableLineColor: [200, 200, 200],
-    tableLineWidth: 0.2,
+  const colW = contentW / metaItems.length;
+  metaItems.forEach((item, i) => {
+    const x = margin + i * colW;
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...C.muted);
+    doc.text(item.label.toUpperCase(), x, headerH + 5.5);
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...C.text);
+    const maxW = colW - 4;
+    const val = doc.splitTextToSize(item.value, maxW)[0] ?? item.value;
+    doc.text(val, x, headerH + 11);
   });
 
-  y = (doc as any).lastAutoTable.finalY + 8;
+  let y = headerH + 20;
 
-  // Weather section
+  // ── Helper: text card ──────────────────────────────────────
+  function textCard(label: string, content: string) {
+    sectionLabel(doc, margin, y, label);
+    y += 5;
+    const lines: string[] = doc.splitTextToSize(content, contentW - 8);
+    const boxH = lines.length * 4.8 + 10;
+    doc.setFillColor(...C.bg);
+    doc.setDrawColor(...C.border);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(margin, y, contentW, boxH, 2, 2, "FD");
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...C.text);
+    doc.text(lines, margin + 5, y + 7);
+    y += boxH + 8;
+  }
+
+  // ── Witterung ──────────────────────────────────────────────
   if (entry.weather || entry.temperature != null || entry.workers != null) {
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(20, 20, 20);
-    doc.text("Witterung", margin, y);
-    y += 3;
-
-    const weatherRow: string[] = [
-      entry.weather ?? "—",
-      entry.temperature != null ? `${entry.temperature} °C` : "—",
-      entry.workers != null ? String(entry.workers) : "—",
-    ];
+    sectionLabel(doc, margin, y, "Witterung");
+    y += 4;
 
     autoTable(doc, {
       startY: y,
       margin: { left: margin, right: margin },
       head: [["Wetter", "Temperatur", "Arbeiter"]],
-      body: [weatherRow],
-      theme: "grid",
-      styles: { fontSize: 9, cellPadding: 2.5 },
-      headStyles: { fillColor: [50, 50, 50], textColor: 255, fontStyle: "bold" },
-      tableLineColor: [200, 200, 200],
-      tableLineWidth: 0.2,
+      body: [[
+        entry.weather ?? "—",
+        entry.temperature != null ? `${entry.temperature} °C` : "—",
+        entry.workers != null ? `${entry.workers} Personen` : "—",
+      ]],
+      theme: "plain",
+      styles: { fontSize: 9, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 }, textColor: C.text },
+      headStyles: {
+        fillColor: C.dark, textColor: C.white, fontStyle: "bold", fontSize: 8,
+        cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+      },
+      alternateRowStyles: { fillColor: C.bg },
+      tableLineColor: C.border,
+      tableLineWidth: 0.25,
     });
-
-    y = (doc as any).lastAutoTable.finalY + 8;
+    y = (doc as any).lastAutoTable.finalY + 9;
   }
 
-  // Attendees section
+  // ── Anwesende ──────────────────────────────────────────────
   if (entry.attendees && entry.attendees.length > 0) {
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(20, 20, 20);
-    doc.text("Anwesende", margin, y);
-    y += 3;
+    sectionLabel(doc, margin, y, "Anwesende Firmen");
+    y += 4;
 
-    const attendeeRows = entry.attendees.map((a) => {
+    const rows = entry.attendees.map((a) => {
       const contact = contacts.find((c) => c.id === a.contactId);
-      const displayName = a.firmName || contact?.company || contact?.name || "—";
-      return [displayName, String(a.personCount), a.activity, a.notes ?? ""];
+      const name = a.firmName || contact?.company || contact?.name || "—";
+      return [name, String(a.personCount), a.activity, a.notes ?? "—"];
     });
 
     autoTable(doc, {
       startY: y,
       margin: { left: margin, right: margin },
-      head: [["Firma / Person", "Personen", "Tätigkeit", "Notiz"]],
-      body: attendeeRows,
-      theme: "grid",
-      styles: { fontSize: 9, cellPadding: 2.5 },
-      headStyles: { fillColor: [50, 50, 50], textColor: 255, fontStyle: "bold" },
-      columnStyles: {
-        0: { cellWidth: 45 },
-        1: { cellWidth: 20, halign: "center" },
-        2: { cellWidth: "auto" },
-        3: { cellWidth: 35 },
+      head: [["Firma / Person", "Pers.", "Tätigkeit", "Notiz"]],
+      body: rows,
+      theme: "plain",
+      styles: { fontSize: 9, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 }, textColor: C.text },
+      headStyles: {
+        fillColor: C.dark, textColor: C.white, fontStyle: "bold", fontSize: 8,
+        cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
       },
-      tableLineColor: [200, 200, 200],
-      tableLineWidth: 0.2,
+      alternateRowStyles: { fillColor: C.bg },
+      columnStyles: {
+        0: { cellWidth: 48 },
+        1: { cellWidth: 14, halign: "center" },
+        2: { cellWidth: "auto" },
+        3: { cellWidth: 38 },
+      },
+      tableLineColor: C.border,
+      tableLineWidth: 0.25,
     });
-
-    y = (doc as any).lastAutoTable.finalY + 8;
+    y = (doc as any).lastAutoTable.finalY + 9;
   }
 
-  // Activities
+  // ── Tätigkeiten ────────────────────────────────────────────
   if (entry.activities) {
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(20, 20, 20);
-    doc.text("Tätigkeiten", margin, y);
-    y += 5;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(60, 60, 60);
-    const lines = doc.splitTextToSize(entry.activities, pageW - margin * 2);
-    doc.text(lines, margin, y);
-    y += lines.length * 4.5 + 6;
+    textCard("Tätigkeiten", entry.activities);
   }
 
-  // Notes
+  // ── Notizen ────────────────────────────────────────────────
   if (entry.notes) {
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(20, 20, 20);
-    doc.text("Notizen", margin, y);
-    y += 5;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(60, 60, 60);
-    const lines = doc.splitTextToSize(entry.notes, pageW - margin * 2);
-    doc.text(lines, margin, y);
-    y += lines.length * 4.5 + 6;
+    textCard("Notizen", entry.notes);
   }
 
-  // Chef notes
+  // ── Chef-Hinweis ───────────────────────────────────────────
   if (entry.chefNotes) {
-    doc.setFillColor(255, 252, 235);
-    const chefLines = doc.splitTextToSize(entry.chefNotes, pageW - margin * 2 - 8);
-    const boxH = chefLines.length * 4.5 + 14;
-    doc.roundedRect(margin, y, pageW - margin * 2, boxH, 2, 2, "F");
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(120, 80, 0);
-    doc.text("Chef-Hinweis", margin + 4, y + 6);
-    doc.setFont("helvetica", "normal");
+    sectionLabel(doc, margin, y, "Chef-Hinweis");
+    y += 5;
+
+    const chefLines: string[] = doc.splitTextToSize(entry.chefNotes, contentW - 14);
+    const boxH = chefLines.length * 4.8 + 12;
+
+    // Amber background card
+    doc.setFillColor(...C.amberLight);
+    doc.setDrawColor(...C.amberMid);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(margin, y, contentW, boxH, 2, 2, "FD");
+
+    // Left amber accent border
+    doc.setFillColor(...C.amber);
+    doc.rect(margin, y, 3.5, boxH, "F");
+
     doc.setFontSize(9);
-    doc.setTextColor(80, 55, 0);
-    doc.text(chefLines, margin + 4, y + 12);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(120, 53, 15); // amber-900
+    doc.text(chefLines, margin + 8, y + 8);
+    y += boxH + 8;
   }
 
-  // Footer
-  const pageH = doc.internal.pageSize.getHeight();
+  // ── Footer ─────────────────────────────────────────────────
+  // Amber bottom stripe
+  doc.setFillColor(...C.amber);
+  doc.rect(0, pageH - 10, pageW, 10, "F");
+
+  // Logo in footer
+  if (logoBase64) {
+    doc.addImage(logoBase64, "PNG", margin, pageH - 8.5, 6, 6);
+  }
+
   doc.setFontSize(7);
-  doc.setTextColor(160, 160, 160);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...C.dark);
   doc.text(
-    `Generiert am ${new Date().toLocaleDateString("de-DE")} · BuildFrameOS`,
+    "BuildFrameOS",
+    logoBase64 ? margin + 8 : margin,
+    pageH - 4.5
+  );
+
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    `Generiert am ${new Date().toLocaleDateString("de-DE")}`,
     pageW / 2,
-    pageH - 6,
+    pageH - 4.5,
     { align: "center" }
+  );
+
+  doc.text(
+    project.name,
+    pageW - margin,
+    pageH - 4.5,
+    { align: "right" }
   );
 
   return doc.output("blob");
@@ -252,7 +304,6 @@ export async function sharePDF(
     return;
   }
 
-  // Fallback: download + open mailto
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -263,7 +314,7 @@ export async function sharePDF(
   if (chefEmail) {
     const subject = encodeURIComponent(filename.replace(".pdf", ""));
     const body = encodeURIComponent(
-      `Hallo,\n\nerbei findest du den ${filename.replace(".pdf", "")}.\n\nMit freundlichen Grüßen`
+      `Hallo,\n\nanbei findest du den ${filename.replace(".pdf", "")}.\n\nMit freundlichen Grüßen`
     );
     setTimeout(() => {
       window.open(`mailto:${chefEmail}?subject=${subject}&body=${body}`);
