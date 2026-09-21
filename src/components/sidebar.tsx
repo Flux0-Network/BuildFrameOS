@@ -6,6 +6,7 @@ import { Building2, BookOpen, Users, LayoutDashboard, Menu, X, Settings, LogOut,
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "./settings-dialog";
 import { useAuth } from "@/context/auth-context";
+import { isAdmin } from "@/lib/admin";
 import Image from "next/image";
 
 const mainNavItems = [
@@ -21,6 +22,8 @@ const chefNavItems = [
 
 function NavLinks({ onClose, onSettings }: { onClose?: () => void; onSettings: () => void }) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const admin = isAdmin(user?.email);
 
   const renderLink = ({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) => {
     const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -46,13 +49,16 @@ function NavLinks({ onClose, onSettings }: { onClose?: () => void; onSettings: (
     <nav className="flex-1 px-3 py-4 space-y-1">
       {mainNavItems.map(renderLink)}
 
-      {/* Chef section divider */}
-      <div className="pt-3 pb-1">
-        <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-          Chef
-        </p>
-      </div>
-      {chefNavItems.map(renderLink)}
+      {admin && (
+        <>
+          <div className="pt-3 pb-1">
+            <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+              Chef
+            </p>
+          </div>
+          {chefNavItems.map(renderLink)}
+        </>
+      )}
     </nav>
   );
 }

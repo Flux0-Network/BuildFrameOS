@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { ProjectDialog } from "./project-dialog";
 import { generateBauberichtPDF, sharePDF } from "@/lib/pdf";
-import { useSettingsStore } from "@/lib/settings-store";
+import { useAuth } from "@/context/auth-context";
+import { ADMIN_EMAIL } from "@/lib/admin";
 
 const statusVariant: Record<string, "success" | "warning" | "secondary"> = {
   aktiv: "success",
@@ -26,8 +27,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const project = useStore((s) => s.projects.find((p) => p.id === projectId));
   const entries = useStore((s) => s.diary.filter((d) => d.projectId === projectId));
   const contacts = useStore((s) => s.contacts);
-  const chefName = useSettingsStore((s) => s.chefName);
-  const chefEmail = useSettingsStore((s) => s.chefEmail);
+  const { user } = useAuth();
   const deleteDiaryEntry = useStore((s) => s.deleteDiaryEntry);
   const [projectOpen, setProjectOpen] = useState(false);
   const [diaryOpen, setDiaryOpen] = useState(false);
@@ -41,10 +41,10 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const handlePdf = async (entry: DiaryEntry, forward = false) => {
     setLoadingPdf(entry.id + (forward ? "-fwd" : ""));
     try {
-      const blob = await generateBauberichtPDF(entry, project, contacts, chefName);
+      const blob = await generateBauberichtPDF(entry, project, contacts, user?.email ?? "");
       const date = new Date(entry.date).toLocaleDateString("de-DE").replace(/\./g, "-");
       const filename = `Baubericht_${project.name.replace(/\s+/g, "_")}_${date}.pdf`;
-      await sharePDF(blob, filename, forward ? chefEmail : undefined);
+      await sharePDF(blob, filename, forward ? ADMIN_EMAIL : undefined);
     } finally {
       setLoadingPdf(null);
     }
@@ -128,7 +128,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                         onClick={() => handlePdf(entry, false)}>
                         <FileDown className="h-3.5 w-3.5" />
                       </Button>
-                      {chefEmail && (
+                      {ADMIN_EMAIL && (
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600 hover:text-amber-700" title="An Chef senden"
                           disabled={loadingPdf === entry.id + "-fwd"}
                           onClick={() => handlePdf(entry, true)}>

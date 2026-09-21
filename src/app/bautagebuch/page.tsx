@@ -6,14 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Cloud, Thermometer, Users, FileDown, Send } from "lucide-react";
 import { generateBauberichtPDF, sharePDF } from "@/lib/pdf";
-import { useSettingsStore } from "@/lib/settings-store";
+import { useAuth } from "@/context/auth-context";
+import { ADMIN_EMAIL } from "@/lib/admin";
 
 export default function BautagebuchPage() {
   const diary = useStore((s) => s.diary);
   const projects = useStore((s) => s.projects);
   const contacts = useStore((s) => s.contacts);
-  const chefName = useSettingsStore((s) => s.chefName);
-  const chefEmail = useSettingsStore((s) => s.chefEmail);
+  const { user } = useAuth();
   const [loadingPdf, setLoadingPdf] = useState<string | null>(null);
 
   const sorted = [...diary].sort((a, b) => b.date.localeCompare(a.date));
@@ -24,10 +24,10 @@ export default function BautagebuchPage() {
     if (!entry || !project) return;
     setLoadingPdf(entryId + (forward ? "-fwd" : ""));
     try {
-      const blob = await generateBauberichtPDF(entry, project, contacts, chefName);
+      const blob = await generateBauberichtPDF(entry, project, contacts, user?.email ?? "");
       const date = new Date(entry.date).toLocaleDateString("de-DE").replace(/\./g, "-");
       const filename = `Baubericht_${project.name.replace(/\s+/g, "_")}_${date}.pdf`;
-      await sharePDF(blob, filename, forward ? chefEmail : undefined);
+      await sharePDF(blob, filename, forward ? ADMIN_EMAIL : undefined);
     } finally {
       setLoadingPdf(null);
     }
@@ -83,7 +83,7 @@ export default function BautagebuchPage() {
                         onClick={() => handlePdf(entry.id, false)}>
                         <FileDown className="h-3.5 w-3.5" />
                       </Button>
-                      {chefEmail && (
+                      {ADMIN_EMAIL && (
                         <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-amber-600 hover:text-amber-700" title="An Chef senden"
                           disabled={loadingPdf === entry.id + "-fwd"}
                           onClick={() => handlePdf(entry.id, true)}>
