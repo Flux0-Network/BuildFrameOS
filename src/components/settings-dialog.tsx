@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useStore } from "@/lib/store";
+import { useSettingsStore } from "@/lib/settings-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +11,9 @@ import { UserCog } from "lucide-react";
 type FormData = { chefName: string; chefEmail: string };
 
 export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const chefName = useStore((s) => s.chefName);
-  const chefEmail = useStore((s) => s.chefEmail);
-  const setChefInfo = useStore((s) => s.setChefInfo);
+  const chefName = useSettingsStore((s) => s.chefName);
+  const chefEmail = useSettingsStore((s) => s.chefEmail);
+  const setChefInfo = useSettingsStore((s) => s.setChefInfo);
   const { register, handleSubmit, reset } = useForm<FormData>();
 
   useEffect(() => {

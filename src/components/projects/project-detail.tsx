@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ProjectDialog } from "./project-dialog";
 import { generateBauberichtPDF, sharePDF } from "@/lib/pdf";
+import { useSettingsStore } from "@/lib/settings-store";
 
 const statusVariant: Record<string, "success" | "warning" | "secondary"> = {
   aktiv: "success",
@@ -25,8 +26,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const project = useStore((s) => s.projects.find((p) => p.id === projectId));
   const entries = useStore((s) => s.diary.filter((d) => d.projectId === projectId));
   const contacts = useStore((s) => s.contacts);
-  const chefName = useStore((s) => s.chefName);
-  const chefEmail = useStore((s) => s.chefEmail);
+  const chefName = useSettingsStore((s) => s.chefName);
+  const chefEmail = useSettingsStore((s) => s.chefEmail);
   const deleteDiaryEntry = useStore((s) => s.deleteDiaryEntry);
   const [projectOpen, setProjectOpen] = useState(false);
   const [diaryOpen, setDiaryOpen] = useState(false);

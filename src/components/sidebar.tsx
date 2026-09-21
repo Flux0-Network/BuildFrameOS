@@ -2,9 +2,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, BookOpen, Users, LayoutDashboard, HardHat, Menu, X, Settings } from "lucide-react";
+import { Building2, BookOpen, Users, LayoutDashboard, HardHat, Menu, X, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "./settings-dialog";
+import { useAuth } from "@/context/auth-context";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -40,9 +41,35 @@ function NavLinks({ onClose, onSettings }: { onClose?: () => void; onSettings: (
   );
 }
 
+function BottomActions({ onSettings, onClose }: { onSettings: () => void; onClose?: () => void }) {
+  const { user, signOut } = useAuth();
+  return (
+    <div className="px-3 pb-4 space-y-1">
+      <button
+        onClick={() => { onClose?.(); onSettings(); }}
+        className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+      >
+        <Settings className="h-4 w-4 flex-shrink-0" />
+        Einstellungen
+      </button>
+      <button
+        onClick={() => signOut()}
+        className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+      >
+        <LogOut className="h-4 w-4 flex-shrink-0" />
+        Abmelden
+      </button>
+      {user && (
+        <p className="px-3 pt-1 text-xs text-muted-foreground truncate">{user.email}</p>
+      )}
+    </div>
+  );
+}
+
 export function Sidebar() {
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { signOut } = useAuth();
 
   return (
     <>
@@ -58,7 +85,14 @@ export function Sidebar() {
             className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             aria-label="Einstellungen"
           >
-            <Settings className="h-4.5 w-4.5" />
+            <Settings className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => signOut()}
+            className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            aria-label="Abmelden"
+          >
+            <LogOut className="h-4 w-4" />
           </button>
           <button
             onClick={() => setOpen(true)}
@@ -72,10 +106,7 @@ export function Sidebar() {
 
       {/* Mobile drawer backdrop */}
       {open && (
-        <div
-          className="lg:hidden fixed inset-0 z-50 bg-black/50"
-          onClick={() => setOpen(false)}
-        />
+        <div className="lg:hidden fixed inset-0 z-50 bg-black/50" onClick={() => setOpen(false)} />
       )}
 
       {/* Mobile drawer */}
@@ -90,25 +121,12 @@ export function Sidebar() {
             <HardHat className="h-5 w-5 text-primary" />
             <span className="font-bold text-base tracking-tight">BuildFrameOS</span>
           </div>
-          <button
-            onClick={() => setOpen(false)}
-            className="rounded-md p-1 text-muted-foreground hover:bg-accent"
-            aria-label="Menü schließen"
-          >
+          <button onClick={() => setOpen(false)} className="rounded-md p-1 text-muted-foreground hover:bg-accent" aria-label="Menü schließen">
             <X className="h-5 w-5" />
           </button>
         </div>
         <NavLinks onClose={() => setOpen(false)} onSettings={() => { setOpen(false); setSettingsOpen(true); }} />
-        <div className="px-3 pb-4">
-          <button
-            onClick={() => { setOpen(false); setSettingsOpen(true); }}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            <Settings className="h-4 w-4 flex-shrink-0" />
-            Einstellungen
-          </button>
-        </div>
-        <div className="px-5 py-4 border-t text-xs text-muted-foreground">v0.1.0</div>
+        <BottomActions onSettings={() => setSettingsOpen(true)} onClose={() => setOpen(false)} />
       </aside>
 
       {/* Desktop sidebar */}
@@ -118,16 +136,7 @@ export function Sidebar() {
           <span className="font-bold text-lg tracking-tight">BuildFrameOS</span>
         </div>
         <NavLinks onSettings={() => setSettingsOpen(true)} />
-        <div className="px-3 pb-4">
-          <button
-            onClick={() => setSettingsOpen(true)}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            <Settings className="h-4 w-4 flex-shrink-0" />
-            Einstellungen
-          </button>
-        </div>
-        <div className="px-6 py-4 border-t text-xs text-muted-foreground">v0.1.0</div>
+        <BottomActions onSettings={() => setSettingsOpen(true)} />
       </aside>
 
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />

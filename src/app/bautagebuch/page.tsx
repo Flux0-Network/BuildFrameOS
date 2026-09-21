@@ -6,13 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Cloud, Thermometer, Users, FileDown, Send } from "lucide-react";
 import { generateBauberichtPDF, sharePDF } from "@/lib/pdf";
+import { useSettingsStore } from "@/lib/settings-store";
 
 export default function BautagebuchPage() {
   const diary = useStore((s) => s.diary);
   const projects = useStore((s) => s.projects);
   const contacts = useStore((s) => s.contacts);
-  const chefName = useStore((s) => s.chefName);
-  const chefEmail = useStore((s) => s.chefEmail);
+  const chefName = useSettingsStore((s) => s.chefName);
+  const chefEmail = useSettingsStore((s) => s.chefEmail);
   const [loadingPdf, setLoadingPdf] = useState<string | null>(null);
 
   const sorted = [...diary].sort((a, b) => b.date.localeCompare(a.date));
