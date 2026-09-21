@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { HardHat, Loader2, MailCheck } from "lucide-react";
+import { Loader2, MailCheck } from "lucide-react";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 
 type Mode = "login" | "register";
@@ -57,7 +58,7 @@ export default function LoginPage() {
       <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
         <div className="w-full max-w-sm text-center">
           <div className="flex items-center justify-center gap-2 mb-8">
-            <HardHat className="h-8 w-8 text-primary" />
+            <Image src="/buildframeOS-logo.png" alt="BuildFrameOS" width={36} height={36} className="object-contain" />
             <span className="text-2xl font-bold tracking-tight">BuildFrameOS</span>
           </div>
           <Card>
@@ -90,7 +91,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <HardHat className="h-8 w-8 text-primary" />
+          <Image src="/buildframeOS-logo.png" alt="BuildFrameOS" width={36} height={36} className="object-contain" />
           <span className="text-2xl font-bold tracking-tight">BuildFrameOS</span>
         </div>
         <Card>

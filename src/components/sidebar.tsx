@@ -2,10 +2,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, BookOpen, Users, LayoutDashboard, HardHat, Menu, X, Settings, LogOut } from "lucide-react";
+import { Building2, BookOpen, Users, LayoutDashboard, Menu, X, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "./settings-dialog";
 import { useAuth } from "@/context/auth-context";
+import Image from "next/image";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -76,7 +77,7 @@ export function Sidebar() {
       {/* Mobile top bar */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b bg-card px-4 h-14">
         <div className="flex items-center gap-2">
-          <HardHat className="h-5 w-5 text-primary" />
+          <Image src="/buildframeOS-logo.png" alt="BuildFrameOS" width={28} height={28} className="object-contain" />
           <span className="font-bold text-base tracking-tight">BuildFrameOS</span>
         </div>
         <div className="flex items-center gap-1">
@@ -118,7 +119,7 @@ export function Sidebar() {
       >
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <div className="flex items-center gap-2">
-            <HardHat className="h-5 w-5 text-primary" />
+            <Image src="/buildframeOS-logo.png" alt="BuildFrameOS" width={28} height={28} className="object-contain" />
             <span className="font-bold text-base tracking-tight">BuildFrameOS</span>
           </div>
           <button onClick={() => setOpen(false)} className="rounded-md p-1 text-muted-foreground hover:bg-accent" aria-label="Menü schließen">
@@ -132,7 +133,7 @@ export function Sidebar() {
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-60 flex-shrink-0 flex-col border-r bg-card">
         <div className="flex items-center gap-2 px-6 py-5 border-b">
-          <HardHat className="h-6 w-6 text-primary" />
+          <Image src="/buildframeOS-logo.png" alt="BuildFrameOS" width={32} height={32} className="object-contain" />
           <span className="font-bold text-lg tracking-tight">BuildFrameOS</span>
         </div>
         <NavLinks onSettings={() => setSettingsOpen(true)} />
