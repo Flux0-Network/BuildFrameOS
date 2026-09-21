@@ -1,5 +1,20 @@
 import type { DiaryEntry, Project, Contact } from "./store";
 
+async function loadLogoBase64(): Promise<string | null> {
+  try {
+    const res = await fetch("/buildframeOS-logo.png");
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("de-DE", {
     weekday: "long",
@@ -15,8 +30,11 @@ export async function generateBauberichtPDF(
   contacts: Contact[],
   chefName: string
 ): Promise<Blob> {
-  const { default: jsPDF } = await import("jspdf");
-  const { default: autoTable } = await import("jspdf-autotable");
+  const [{ default: jsPDF }, { default: autoTable }, logoBase64] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+    loadLogoBase64(),
+  ]);
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -32,11 +50,20 @@ export async function generateBauberichtPDF(
 
   y = 22;
 
-  // App name
-  doc.setFontSize(18);
-  doc.setTextColor(20, 20, 20);
-  doc.setFont("helvetica", "bold");
-  doc.text("BuildFrameOS", margin, y);
+  // Logo + App name side by side
+  const logoSize = 14;
+  if (logoBase64) {
+    doc.addImage(logoBase64, "PNG", margin, y - 10, logoSize, logoSize);
+    doc.setFontSize(18);
+    doc.setTextColor(20, 20, 20);
+    doc.setFont("helvetica", "bold");
+    doc.text("BuildFrameOS", margin + logoSize + 3, y - 2);
+  } else {
+    doc.setFontSize(18);
+    doc.setTextColor(20, 20, 20);
+    doc.setFont("helvetica", "bold");
+    doc.text("BuildFrameOS", margin, y);
+  }
   y += 8;
 
   // Project name
