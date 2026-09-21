@@ -2,42 +2,57 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, BookOpen, Users, LayoutDashboard, Menu, X, Settings, LogOut } from "lucide-react";
+import { Building2, BookOpen, Users, LayoutDashboard, Menu, X, Settings, LogOut, HardHat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "./settings-dialog";
 import { useAuth } from "@/context/auth-context";
 import Image from "next/image";
 
-const navItems = [
+const mainNavItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/projekte", label: "Projekte", icon: Building2 },
   { href: "/bautagebuch", label: "Bautagebuch", icon: BookOpen },
   { href: "/kontakte", label: "Kontakte", icon: Users },
 ];
 
+const chefNavItems = [
+  { href: "/chef", label: "Chef", icon: HardHat },
+];
+
 function NavLinks({ onClose, onSettings }: { onClose?: () => void; onSettings: () => void }) {
   const pathname = usePathname();
+
+  const renderLink = ({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) => {
+    const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+    return (
+      <Link
+        key={href}
+        href={href}
+        onClick={onClose}
+        className={cn(
+          "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+          active
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        )}
+      >
+        <Icon className="h-4 w-4 flex-shrink-0" />
+        {label}
+      </Link>
+    );
+  };
+
   return (
     <nav className="flex-1 px-3 py-4 space-y-1">
-      {navItems.map(({ href, label, icon: Icon }) => {
-        const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
-        return (
-          <Link
-            key={href}
-            href={href}
-            onClick={onClose}
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-              active
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            )}
-          >
-            <Icon className="h-4 w-4 flex-shrink-0" />
-            {label}
-          </Link>
-        );
-      })}
+      {mainNavItems.map(renderLink)}
+
+      {/* Chef section divider */}
+      <div className="pt-3 pb-1">
+        <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+          Chef
+        </p>
+      </div>
+      {chefNavItems.map(renderLink)}
     </nav>
   );
 }
